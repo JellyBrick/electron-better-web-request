@@ -1,40 +1,23 @@
 {
   "compilerOptions": {
-    "outDir": "lib",
-    "declaration": true,
-    "resolveJsonModule": true,
+    "target": "ESNext",
+    "lib": ["dom", "dom.iterable", "es2022"],
+    "module": "CommonJS",
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "experimentalDecorators": true,
-    "removeComments": false,
-    "preserveConstEnums": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "suppressImplicitAnyIndexErrors": true,
-    "strictNullChecks": true,
-    "noUnusedLocals": true,
-    "noImplicitThis": true,
-    "noUnusedParameters": true,
-    "inlineSourceMap": true,
-    "inlineSources": true,
-    "importHelpers": true,
-    "noEmitHelpers": true,
-    "skipLibCheck": true,
-    "module": "commonjs",
-    "target": "es2016",
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
     "baseUrl": ".",
-    "lib": [
-      "es2017",
-      "dom"
-    ],
-    "typeRoots": [
-      "./node_modules/@types",
-      "./src/@types"
-    ] 
+    "outDir": "./lib",
+    "strict": true,
+    "noImplicitAny": true,
+    "strictFunctionTypes": true,
+    "skipLibCheck": true
   },
-  "include": [
-    "src/**/*",
-  ],
   "exclude": [
-    "node_modules/**/*"
-  ]
+    "./dist"
+  ],
+  "paths": {
+    "*": ["*.d.ts"]
+  }
 }

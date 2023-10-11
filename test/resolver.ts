@@ -1,7 +1,11 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment,@typescript-eslint/no-explicit-any */
+
 import assert from 'assert';
 import { EventEmitter } from 'events';
 
 import { BetterWebRequest } from '../src/electron-better-web-request';
+
+import type { CallbackResponse } from 'electron';
 
 describe('Resolver', () => {
   describe('Default resolver', () => {
@@ -13,8 +17,10 @@ describe('Resolver', () => {
         onBeforeRequest: (filters: any, listenerFactory: any) => {
           // Then trigger the listenerFactory, mimicking a instant trigger
           trigger.on('on-before-request', () => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
             listenerFactory(
               { result : 'failure', method : 'onBeforeRequest', url: 'http://test.com' },
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
               (response: any) => assert.equal(response.result, 'BAZ')
             );
           });
@@ -24,13 +30,13 @@ describe('Resolver', () => {
       // Create different listeners with an exepected signature
       const fakeListenerFoo = () => assert.fail('Foo listener should not have been called');
       const fakeListenerBar = () => assert.fail('Foo listener should not have been called');
-      const fakeListenerBaz = (details: any, callback: Function) => {
-        const response = { ...details, ...{ result: 'BAZ' } };
-        callback(response);
+      const fakeListenerBaz = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
+        const response = { ...details, ...{ result: 'BAZ' } } as CallbackResponse;
+        callback?.(response);
       };
 
       // Add listeners
-      const webRq = new BetterWebRequest(mockedWebRequest);
+      const webRq = new BetterWebRequest(mockedWebRequest as Electron.WebRequest);
       assert.doesNotThrow(() => {
         webRq.addListener('onBeforeRequest', { urls: ['*://test.com/'] }, fakeListenerFoo, { origin: 'FOO' });
         webRq.addListener('onBeforeRequest', { urls: ['*://test.com/'] }, fakeListenerBar, { origin: 'BAR' });
@@ -45,7 +51,14 @@ describe('Resolver', () => {
   it('can use a custom resolver', () => {
     const mockedWebRequest = {
       onBeforeRequest: () => {},
-    };
+      onBeforeSendHeaders: () => {},
+      onBeforeRedirect: () => {},
+      onCompleted: () => {},
+      onErrorOccurred: () => {},
+      onHeadersReceived: () => {},
+      onResponseStarted: () => {},
+      onSendHeaders: () => {},
+    } satisfies Electron.WebRequest;
     const fakeListener = () => {};
 
     // Set a custom resolver, then add a listener to mock the trigger & call

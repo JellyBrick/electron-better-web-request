@@ -1,8 +1,8 @@
-import { Session } from 'electron';
-
 import betterWebRequest from './electron-better-web-request';
 
-const store = new Set();
+import type { Session } from 'electron';
+
+const store = new Set<Session>();
 
 const enhanceWebRequest = (session: Session): Session => {
   if (store.has(session)) {

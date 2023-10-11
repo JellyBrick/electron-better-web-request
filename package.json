@@ -7,29 +7,32 @@
   "license": "ISC",
   "homepage": "https://github.com/getstation/electron-better-web-request#readme",
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/getstation/electron-better-web-request"
-   },
+    "type": "git",
+    "url": "https://github.com/getstation/electron-better-web-request"
+  },
   "scripts": {
     "test": "mocha -r ts-node/register test/**/*.ts",
-    "prepublish": "rm -rf ./lib/ && tslint -p . && tsc -p . --declaration"
+    "prepublish": "del-cli ./lib/ && eslint . && tsc -p . --declaration"
   },
   "files": [
     "lib"
   ],
   "devDependencies": {
-    "@types/mocha": "^5.2.5",
-    "@types/node": "^10.12.18",
-    "@types/uuid": "^3.4.4",
-    "electron": "^4.0.1",
-    "mocha": "^5.2.0",
-    "ts-node": "^7.0.1",
-    "tslint": "^5.12.0",
-    "tslint-config-station": "^0.5.1",
-    "typescript": "^3.2.2"
+    "@types/mocha": "^10.0.2",
+    "@types/node": "^20.8.4",
+    "@types/uuid": "^9.0.5",
+    "@typescript-eslint/eslint-plugin": "^6.7.5",
+    "del-cli": "^5.1.0",
+    "electron": "^27.0.0",
+    "eslint": "^8.51.0",
+    "eslint-plugin-import": "^2.28.1",
+    "eslint-plugin-prettier": "^5.0.0",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
   },
   "dependencies": {
-    "url-match-patterns": "^0.2.0",
-    "uuid": "^3.3.2"
+    "browser-extension-url-match": "^1.0.0",
+    "uuid": "^9.0.1"
   }
 }

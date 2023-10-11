@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { BetterWebRequest } from '../src/electron-better-web-request';
+import { BetterWebRequest } from '../src/electron-better-web-request';
 import {
   IListener,
 } from '../src/types';
@@ -8,7 +8,13 @@ import {
 const mockedWebRequest = {
   onBeforeRequest: () => {},
   onBeforeSendHeaders: () => {},
-};
+  onBeforeRedirect: () => {},
+  onCompleted: () => {},
+  onErrorOccurred: () => {},
+  onHeadersReceived: () => {},
+  onResponseStarted: () => {},
+  onSendHeaders: () => {},
+} satisfies Electron.WebRequest;
 
 describe('Listeners & Filters Manipulation', () => {
   describe('Getting', () => {

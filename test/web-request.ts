@@ -1,6 +1,10 @@
+/* eslint-disable @typescript-eslint/ban-ts-comment,@typescript-eslint/no-explicit-any */
+
 import assert = require('assert');
 
 import { BetterWebRequest } from '../src/electron-better-web-request';
+
+import type { CallbackResponse } from 'electron';
 
 describe('Electron Better Web Request', () => {
   it('executes', () => {
@@ -8,23 +12,26 @@ describe('Electron Better Web Request', () => {
     const mockedWebRequest = {
       onBeforeRequest: (filters: any, listenerFactory: any) => {
         // Just assert the filters
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
         assert.equal(filters.urls[0], '*://test.url/');
         // Then trigger the listenerFactory, mimicking a instant trigger
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         listenerFactory(
           { result : 'failure', method : 'onBeforeRequest', url: 'http://test.url' },
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
           (response: any) => assert.equal(response.result, 'success')
         );
       },
     };
 
     // Create a listener with an exepected signature
-    const fakeListener = (details: any, callback: Function) => {
-      const response = { ...details, ...{ result: 'success' } };
-      callback(response);
+    const fakeListener = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
+      const response = { ...details, ...{ result: 'success' } } as CallbackResponse;
+      callback?.(response);
     };
 
     // Add the listener
-    const webRq = new BetterWebRequest(mockedWebRequest);
+    const webRq = new BetterWebRequest(mockedWebRequest as Electron.WebRequest);
     webRq.addListener('onBeforeRequest', { urls: ['*://test.url/'] }, fakeListener, { origin: 'EXEC' });
 
     // Pray
@@ -34,6 +41,7 @@ describe('Electron Better Web Request', () => {
     const mockedWebRequest = {
       // @ts-ignore
       onSendHeaders: (filters: any, listenerFactory: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         listenerFactory(
           { result: 'received', method: 'onSendHeaders', url: 'http://nop.url' },
           () => assert.fail('Callback should not have been called')
@@ -42,13 +50,14 @@ describe('Electron Better Web Request', () => {
     };
 
     // Create a listener with an exepected signature
-    const fakeListener = (details: any, callback: Function) => {
+    const fakeListener = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       assert.equal(details.result, 'received');
-      callback(details);
+      callback?.(details as CallbackResponse);
     };
 
     // Add the listener
-    const webRq = new BetterWebRequest(mockedWebRequest);
+    const webRq = new BetterWebRequest(mockedWebRequest as Electron.WebRequest);
     webRq.addListener('onSendHeaders', { urls: ['http://*.url/'] }, fakeListener, { origin: 'NO CALLBACK' });
   });
 
@@ -56,18 +65,19 @@ describe('Electron Better Web Request', () => {
     const mockedWebRequest = {
       // @ts-ignore
       onBeforeRequest: (filters: any, listenerFactory: any) => {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         listenerFactory({ method: 'onBeforeRequest', url: 'http://nop.url' });
       },
     };
 
     // Create a listener with an exepected signature
     // @ts-ignore
-    const fakeListener = (details: any, callback: Function) => {
+    const fakeListener = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
       assert.fail('Listener should not have been called');
     };
 
     // Add the listener
-    const webRq = new BetterWebRequest(mockedWebRequest);
+    const webRq = new BetterWebRequest(mockedWebRequest as Electron.WebRequest);
     webRq.addListener('onBeforeRequest', { urls: ['http://*.different/'] }, fakeListener, { origin: 'NO CALLBACK' });
   });
 
@@ -82,6 +92,7 @@ describe('Electron Better Web Request', () => {
       // @ts-ignore
       onBeforeRequest: (filters: any, listenerFactory: any) => {
         // Make the listener factory pretend it has been called for a different method
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call
         listenerFactory({ method: 'onHeadersReceived', url: 'http://nop.url' });
       },
       // Will be called again with 'null', since no registered listener will be found
@@ -92,12 +103,12 @@ describe('Electron Better Web Request', () => {
 
     // Create a listener with an exepected signature
     // @ts-ignore
-    const fakeListener = (details: any, callback: Function) => {
+    const fakeListener = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
       assert.fail('Listener should not have been called');
     };
 
     // Add the listener to the first method
-    const webRq = new BetterWebRequest(mockedWebRequest);
+    const webRq = new BetterWebRequest(mockedWebRequest as Electron.WebRequest);
     webRq.addListener('onBeforeRequest', { urls: ['http://*.different/'] }, fakeListener, { origin: 'NO CALLBACK' });
   });
 });

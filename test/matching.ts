@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { BetterWebRequest } from '../src/electron-better-web-request';
+import { BetterWebRequest } from '../src/electron-better-web-request';
 
 const foo = {
   id: 'foo',
@@ -30,7 +30,7 @@ const mix = {
   context: { order: 4 },
 };
 
-const mockedWebRequest = {};
+const mockedWebRequest = {} as Electron.WebRequest;
 
 describe('Matching Url Patterns', () => {
   it('matches one listener with ONE pattern', () => {
@@ -39,7 +39,6 @@ describe('Matching Url Patterns', () => {
 
     const res = webRq.matchListeners('http://test/foo', listeners);
     assert.equal(res.length, 1);
-    // @ts-ignore
     assert.equal(res[0].id, 'foo');
   });
 
@@ -49,7 +48,6 @@ describe('Matching Url Patterns', () => {
 
     const res = webRq.matchListeners('http://test.hello.com', listeners);
     assert.equal(res.length, 1);
-    // @ts-ignore
     assert.equal(res[0].id, 'mix');
   });
 
@@ -59,9 +57,7 @@ describe('Matching Url Patterns', () => {
 
     const res = webRq.matchListeners('http://test/foo', listeners);
     assert.equal(res.length, 2);
-    // @ts-ignore
     assert.equal(res[0].id, 'mix');
-    // @ts-ignore
     assert.equal(res[1].id, 'foo');
   });
 

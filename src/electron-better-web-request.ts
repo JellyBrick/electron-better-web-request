@@ -1,6 +1,6 @@
 import { Session } from 'electron';
-import match from 'url-match-patterns';
-import uuid from 'uuid/v4';
+import { matchPattern } from 'browser-extension-url-match';
+import { v4 as uuid } from 'uuid';
 
 import {
   IBetterWebRequest,
@@ -12,13 +12,14 @@ import {
   IApplier,
   IListenerCollection,
   IAliasParameters,
+  ParseParametersFunction, AliasFunction, IResolver, IAction, IDetail,
 } from './types';
 
-const defaultResolver = (listeners: IApplier[]) => {
+const defaultResolver = ((listeners) => {
   const sorted = listeners.sort((a, b) => b.context.order - a.context.order);
   const last = sorted[0];
   return last.apply();
-};
+}) as IResolver;
 
 const methodsWithCallback = [
   'onBeforeRequest',
@@ -26,7 +27,7 @@ const methodsWithCallback = [
   'onHeadersReceived',
 ];
 
-const aliasMethods = [
+const aliasMethods: WebRequestMethod[] = [
   'onBeforeRequest',
   'onBeforeSendHeaders',
   'onHeadersReceived',
@@ -38,14 +39,14 @@ const aliasMethods = [
 ];
 
 export class BetterWebRequest implements IBetterWebRequest {
-  private webRequest: any;
+  private readonly webRequest: Electron.WebRequest;
 
   private orderIndex: number;
-  private listeners: Map<WebRequestMethod, IListenerCollection>;
-  private filters: Map<WebRequestMethod, Set<URLPattern>>;
-  private resolvers: Map<WebRequestMethod, Function>;
+  private readonly listeners: Map<WebRequestMethod, IListenerCollection>;
+  private readonly filters: Map<WebRequestMethod, Set<URLPattern>>;
+  private resolvers: Map<WebRequestMethod, IResolver>;
 
-  constructor(webRequest: any) {
+  constructor(webRequest: Electron.WebRequest) {
     this.orderIndex = 0;
     this.webRequest = webRequest;
     this.listeners = new Map();
@@ -77,18 +78,25 @@ export class BetterWebRequest implements IBetterWebRequest {
     return methodsWithCallback.includes(method);
   }
 
-  // Handling alias for drop in replacement
-  alias(method: WebRequestMethod, parameters: any) {
-    const args = this.parseArguments(parameters);
+  /**
+   * Handling alias for drop-in replacement
+   */
+  alias: AliasFunction = (method, parameters = []) => {
+    const args = this.parseArguments(parameters as never);
     return this.identifyAction(method, args);
-  }
+  };
 
-  addListener(method: WebRequestMethod, filter: IFilter, action: Function, outerContext: Partial<IContext> = {}) {
+  addListener(
+    method: WebRequestMethod,
+    filter: IFilter,
+    action: IListener['action'],
+    outerContext: Partial<IContext> = {},
+  ) {
     const { urls } = filter;
     const id = uuid();
     const innerContext = { order: this.nextIndex };
     const context = { ...outerContext, ...innerContext };
-    const listener = {
+    const listener: IListener = {
       id,
       urls,
       action,
@@ -113,7 +121,8 @@ export class BetterWebRequest implements IBetterWebRequest {
     }
 
     // Remake the new hook
-    this.webRequest[method]({ urls: [...currentFilters] }, this.listenerFactory(method));
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-explicit-any
+    (this.webRequest[method] as any)({ urls: [...currentFilters] }, this.listenerFactory(method));
 
     return listener;
   }
@@ -134,7 +143,8 @@ export class BetterWebRequest implements IBetterWebRequest {
       this.filters.set(method, newFilters);
 
       // Rebind the new hook
-      this.webRequest[method]([...newFilters], this.listenerFactory(method));
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-explicit-any
+      (this.webRequest[method] as any)([...newFilters], this.listenerFactory(method));
     }
   }
 
@@ -145,10 +155,11 @@ export class BetterWebRequest implements IBetterWebRequest {
     if (listeners) listeners.clear();
     if (filters) filters.clear();
 
-    this.webRequest[method](null);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-explicit-any
+    (this.webRequest[method] as any)(null);
   }
 
-  setResolver(method: WebRequestMethod, resolver: Function) {
+  setResolver(method: WebRequestMethod, resolver: IResolver) {
     if (!this.hasCallback(method)) {
       console.warn(`Event method "${method}" has no callback and does not use a resolver`);
       return;
@@ -161,58 +172,62 @@ export class BetterWebRequest implements IBetterWebRequest {
     this.resolvers.set(method, resolver);
   }
 
-  // Find a subset of listeners that match a given url
+  /**
+   * Find a subset of listeners that match a given url
+   */
   matchListeners(url: string, listeners: IListenerCollection): IListener[] {
     const arrayListeners = Array.from(listeners.values());
 
     return arrayListeners.filter(
-      element => element.urls.some(value => match(value, url))
+      (element) => element.urls.some((value) => matchPattern(value).assertValid().match(url))
     );
   }
 
-  // Workflow triggered when a web request arrive
-  // Use the original listener signature needed by electron.webrequest.onXXXX()
+  /**
+   * Workflow triggered when a web request arrive
+   * Use the original listener signature needed by electron.webrequest.onXXXX()
+   */
   private listenerFactory(method: WebRequestMethod) {
-    return async (details: any, callback?: Function) => {
+    return async (details: IDetail, callback?: (response: Electron.CallbackResponse) => void) => {
       if (!this.listeners.has(method)) {
-        this.webRequest[method](null);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-explicit-any
+        (this.webRequest[method] as any)(null);
         return;
       }
 
       const listeners = this.listeners.get(method);
 
       if (!listeners) {
-        if (callback) callback({ cancel: false });
+        callback?.({ cancel: false });
         return;
       }
 
       const matchedListeners = this.matchListeners(details.url, listeners);
 
       if (matchedListeners.length === 0) {
-        if (callback) callback({ cancel: false });
+        callback?.({ cancel: false });
         return;
       }
 
-      let resolve = this.resolvers.get(method);
-
-      if (!resolve) {
-        resolve = defaultResolver;
-      }
-
+      const resolve = this.resolvers.get(method) ?? defaultResolver;
       const requestsProcesses = this.processRequests(details, matchedListeners);
 
       if (this.hasCallback(method) && callback) {
         const modified = await resolve(requestsProcesses);
-        callback(modified);
+        if (modified) {
+          callback(modified);
+        }
       } else {
-        requestsProcesses.map(listener => listener.apply());
+        requestsProcesses.map((listener) => listener.apply());
       }
     };
   }
 
-  // Create all the executions of listeners on the web request (independently)
-  // Wrap them so they can be triggered only when needed
-  private processRequests(details: any, requestListeners: IListener[]): IApplier[] {
+  /**
+   * Create all the executions of listeners on the web request (independently)
+   * Wrap them, so they can be triggered only when needed
+   */
+  private processRequests(details: IDetail, requestListeners: IListener[]): IApplier[] {
     const appliers: IApplier[] = [];
 
     for (const listener of requestListeners) {
@@ -227,10 +242,14 @@ export class BetterWebRequest implements IBetterWebRequest {
     return appliers;
   }
 
-  // Factory : make a function that will return a Promise wrapping the execution of the listener
-  // Allow to trigger the application only when needed + promisify the execution of this listener
-  private makeApplier(details: any, listener: Function): Function {
-    return () => new Promise((resolve, reject) => {
+  /**
+   * Factory : make a function that will return a Promise wrapping the execution of the listener
+   * Allow to trigger the application only when needed + promisify the execution of this listener
+   * @param details
+   * @param listener
+   */
+  private makeApplier(details: IDetail, listener: IAction): () => Promise<Electron.CallbackResponse> {
+    return () => new Promise<Electron.CallbackResponse>((resolve, reject) => {
       try {
         listener(details, resolve);
       } catch (err) {
@@ -239,7 +258,7 @@ export class BetterWebRequest implements IBetterWebRequest {
     });
   }
 
-  private mergeFilters(listeners: IListenerCollection) {
+  private mergeFilters(listeners: IListenerCollection): Set<URLPattern> {
     const arrayListeners = Array.from(listeners.values());
 
     return arrayListeners.reduce(
@@ -247,12 +266,12 @@ export class BetterWebRequest implements IBetterWebRequest {
         for (const url of value.urls) accumulator.add(url);
         return accumulator;
       },
-      new Set()
+      new Set<URLPattern>()
     );
   }
 
-  private parseArguments(parameters: any): IAliasParameters {
-    const args = {
+  private parseArguments: ParseParametersFunction = (parameters = []) => {
+    const args: IAliasParameters = {
       unbind: false,
       filter: { urls: ['<all_urls>'] },
       action: null,
@@ -274,14 +293,14 @@ export class BetterWebRequest implements IBetterWebRequest {
 
       case 2:
         if (typeof parameters[0] === 'object' && typeof parameters[1] === 'function') {
-          args.filter = parameters[0];
+          args.filter = parameters[0]!;
           args.action = parameters[1];
           break;
         }
 
-        if (typeof parameters[0] === 'function') {
+        if (typeof parameters[0] === 'function' && typeof parameters[1] === 'object') {
           args.action = parameters[0];
-          args.context = parameters[1];
+          args.context = parameters[1]!;
           break;
         }
 
@@ -302,7 +321,7 @@ export class BetterWebRequest implements IBetterWebRequest {
     }
 
     return args;
-  }
+  };
 
   private identifyAction(method: WebRequestMethod, args: IAliasParameters) {
     const { unbind, filter, action, context } = args;
@@ -319,13 +338,17 @@ export class BetterWebRequest implements IBetterWebRequest {
   }
 }
 
-// Proxy handler that add support for all alias methods by redirecting to BetterWebRequest.alias()
-const aliasHandler = {
-  get: (target: BetterWebRequest, property: any) => {
-    if (aliasMethods.includes(property)) {
-      return (...parameters: any) => {
-        target.alias(property, parameters);
-      };
+/**
+ * Proxy handler that add support for all alias methods by redirecting to BetterWebRequest.alias()
+ */
+const aliasHandler: ProxyHandler<BetterWebRequest> = {
+  get(target, property: keyof typeof target) {
+    if (typeof property === 'string') {
+      if (aliasMethods.includes(property as WebRequestMethod)) {
+        return (...parameters: unknown[]) => {
+          target.alias(property as WebRequestMethod, parameters as never);
+        };
+      }
     }
 
     return target[property];
