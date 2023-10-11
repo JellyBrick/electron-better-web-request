@@ -1,6 +1,6 @@
 {
   "name": "@jellybrick/electron-better-web-request",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Module replacement for electron-web-request",
   "main": "./lib/store.js",
   "author": "JellyBrick <shlee1503@naver.com>",
