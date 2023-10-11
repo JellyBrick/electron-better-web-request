@@ -1,7 +1,8 @@
-import betterWebRequest from './electron-better-web-request';
+import betterWebRequest, { type BetterWebRequest } from './electron-better-web-request';
 
-import type { BetterSession } from './types';
 import type { Session } from 'electron';
+
+export type BetterSession = Omit<Electron.Session, 'webRequest'> & { webRequest: BetterWebRequest & Electron.WebRequest };
 
 const store = new Set<Session>();
 

@@ -1,5 +1,3 @@
-import type { BetterWebRequest } from './electron-better-web-request';
-
 type WebRequestWithCallback =
   'onBeforeRequest' |
   'onBeforeSendHeaders' |
@@ -12,7 +10,6 @@ type WebRequestWithoutCallback =
   'onCompleted' |
   'onErrorOccurred';
 
-export type BetterSession = Omit<Electron.Session, 'webRequest'> & { webRequest: BetterWebRequest & Electron.WebRequest };
 export type WebRequestMethod = WebRequestWithCallback | WebRequestWithoutCallback;
 export type URLPattern = string;
 
