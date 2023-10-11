@@ -36,7 +36,8 @@ export type IDetail = Electron.OnBeforeRequestListenerDetails
   | Electron.OnBeforeRedirectListenerDetails
   | Electron.OnCompletedListenerDetails
   | Electron.OnErrorOccurredListenerDetails;
-export type IAction = (details?: IDetail, resolver?: (response: Electron.CallbackResponse) => void) => void | Promise<void> | Electron.CallbackResponse | Promise<Electron.CallbackResponse>;
+export type Resolver = (response: Electron.CallbackResponse) => void;
+export type IAction = (details?: IDetail, resolver?: Resolver) => void | Promise<void> | Electron.CallbackResponse | Promise<Electron.CallbackResponse>;
 export type IResolver = (appliers: IApplier[]) => Electron.CallbackResponse | Promise<Electron.CallbackResponse> | void;
 
 export interface IFilter {

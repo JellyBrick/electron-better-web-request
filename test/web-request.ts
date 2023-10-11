@@ -4,6 +4,7 @@ import assert = require('assert');
 
 import { BetterWebRequest } from '../src/electron-better-web-request';
 
+import type { Resolver } from '../src/types';
 import type { CallbackResponse } from 'electron';
 
 describe('Electron Better Web Request', () => {
@@ -25,7 +26,7 @@ describe('Electron Better Web Request', () => {
     };
 
     // Create a listener with an exepected signature
-    const fakeListener = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
+    const fakeListener = (details: any, callback?: Resolver) => {
       const response = { ...details, ...{ result: 'success' } } as CallbackResponse;
       callback?.(response);
     };
@@ -50,7 +51,7 @@ describe('Electron Better Web Request', () => {
     };
 
     // Create a listener with an exepected signature
-    const fakeListener = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
+    const fakeListener = (details: any, callback?: Resolver) => {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       assert.equal(details.result, 'received');
       callback?.(details as CallbackResponse);
@@ -72,7 +73,7 @@ describe('Electron Better Web Request', () => {
 
     // Create a listener with an exepected signature
     // @ts-ignore
-    const fakeListener = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
+    const fakeListener = (_: any, _?: Resolver) => {
       assert.fail('Listener should not have been called');
     };
 
@@ -103,7 +104,7 @@ describe('Electron Better Web Request', () => {
 
     // Create a listener with an exepected signature
     // @ts-ignore
-    const fakeListener = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
+    const fakeListener = (_: any, _?: Resolver) => {
       assert.fail('Listener should not have been called');
     };
 

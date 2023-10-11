@@ -5,6 +5,7 @@ import { EventEmitter } from 'events';
 
 import { BetterWebRequest } from '../src/electron-better-web-request';
 
+import type { Resolver } from '../src/types';
 import type { CallbackResponse } from 'electron';
 
 describe('Resolver', () => {
@@ -30,7 +31,7 @@ describe('Resolver', () => {
       // Create different listeners with an exepected signature
       const fakeListenerFoo = () => assert.fail('Foo listener should not have been called');
       const fakeListenerBar = () => assert.fail('Foo listener should not have been called');
-      const fakeListenerBaz = (details: any, callback: ((response: CallbackResponse) => void) | undefined) => {
+      const fakeListenerBaz = (details: any, callback?: Resolver) => {
         const response = { ...details, ...{ result: 'BAZ' } } as CallbackResponse;
         callback?.(response);
       };

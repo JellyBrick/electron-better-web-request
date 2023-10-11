@@ -12,7 +12,12 @@ import {
   IApplier,
   IListenerCollection,
   IAliasParameters,
-  ParseParametersFunction, AliasFunction, IResolver, IAction, IDetail,
+  ParseParametersFunction,
+  AliasFunction,
+  IResolver,
+  IAction,
+  IDetail,
+  Resolver,
 } from './types';
 
 const defaultResolver = ((listeners) => {
@@ -188,7 +193,7 @@ export class BetterWebRequest implements IBetterWebRequest {
    * Use the original listener signature needed by electron.webrequest.onXXXX()
    */
   private listenerFactory(method: WebRequestMethod) {
-    return async (details: IDetail, callback?: (response: Electron.CallbackResponse) => void) => {
+    return async (details: IDetail, callback?: Resolver) => {
       if (!this.listeners.has(method)) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-call,@typescript-eslint/no-explicit-any
         (this.webRequest[method] as any)(null);
