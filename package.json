@@ -1,8 +1,9 @@
 {
   "name": "@jellybrick/electron-better-web-request",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Module replacement for electron-web-request",
-  "main": "./lib/store.js",
+  "main": "./dist/src/store.js",
+  "types": "./dist/src/store.d.ts",
   "author": "JellyBrick <shlee1503@naver.com>",
   "license": "ISC",
   "homepage": "https://github.com/JellyBrick/electron-better-web-request#readme",
@@ -12,10 +13,10 @@
   },
   "scripts": {
     "test": "mocha -r ts-node/register test/**/*.ts",
-    "prepublish": "del-cli ./lib/ && eslint . && tsc -p . --declaration"
+    "prepublish": "del-cli ./dist/ && eslint . && tsc -p . --declaration"
   },
   "files": [
-    "lib"
+    "dist"
   ],
   "devDependencies": {
     "@types/mocha": "^10.0.2",

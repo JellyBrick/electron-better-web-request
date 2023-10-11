@@ -39,7 +39,7 @@ node_modules/
 jspm_packages/
 
 # Build directory
-lib/
+dist/
 
 # Typescript v1 declaration files
 typings/
